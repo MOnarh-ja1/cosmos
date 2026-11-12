@@ -1,10 +1,12 @@
-name: Build MgameIO Control Center
+name: Build MgameIO Control Center (anti-flicker)
 
 on:
   push:
     branches: [main]
     paths:
       - 'mgameio/source.tar.gz.b64'
+      - 'mgameio/antiflicker_patch.py'
+      - '.github/workflows/build-control-center.yml'
   workflow_dispatch:
 
 permissions:
@@ -23,6 +25,10 @@ jobs:
         run: |
           mkdir -p build
           base64 --decode mgameio/source.tar.gz.b64 | tar -xz -C build
+      - name: Patch UI painting to prevent flicker
+        shell: bash
+        run: |
+          python3 mgameio/antiflicker_patch.py
       - name: Compile standalone Windows GUI exe
         shell: bash
         run: |
