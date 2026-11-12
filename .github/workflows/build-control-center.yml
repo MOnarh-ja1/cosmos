@@ -1,0 +1,48 @@
+name: Build MgameIO Control Center
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mgameio/source.tar.gz.b64'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Unpack Windows app sources
+        shell: bash
+        run: |
+          mkdir -p build
+          base64 --decode mgameio/source.tar.gz.b64 | tar -xz -C build
+      - name: Compile standalone Windows GUI exe
+        shell: bash
+        run: |
+          cd build
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -H=windowsgui" -o ../MgameIO_Control_Center.exe .
+          cd ..
+          file MgameIO_Control_Center.exe
+          test -s MgameIO_Control_Center.exe
+      - name: Publish EXE to repository for direct download
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f MgameIO_Control_Center.exe
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish Windows EXE"
+            git push
+          fi
+      - name: Backup downloadable ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MgameIO-Control-Center-Windows
+          path: MgameIO_Control_Center.exe
